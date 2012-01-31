@@ -101,6 +101,13 @@ for conffile in CONFIGURATION_FILES:
         pass
     else:
         break
+else:
+    print "Could not find JSON configuration file in any of the following locations:\n"
+    for path in CONFIGURATION_FILES:
+        print "    %s" % path
+    print "\nAborting."
+    import sys
+    sys.exit(1)
 
 
 def default_argument_parser(description, cls, ask_contest=None):
