@@ -1,6 +1,7 @@
 {% import time %}
 {% import cms.util.Utils as Utils %}
 {% import cms.util.Cryptographics as Cryptographics %}
+{% import simplejson as json %}
 
 {% set encrypted_id = Cryptographics.encrypt_number(s.id) %}
 
