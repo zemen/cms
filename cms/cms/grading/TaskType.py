@@ -454,7 +454,7 @@ class TaskType:
 
         # Set sandbox parameters suitable for evaluation.
         self.sandbox.chdir = self.sandbox.path
-        self.sandbox.filter_syscalls = 2
+        self.sandbox.filter_syscalls = 1
         self.sandbox.timeout = time_limit
         self.sandbox.address_space = memory_limit * 1024
         self.sandbox.file_check = 1
