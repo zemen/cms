@@ -228,7 +228,7 @@ $("select[name=task_type]").change(showTaskTypeOption);
       <tr>
         <td>Submission format</td>
         <td>
-          <input type="text" name="submission_format" value="{{ json.dumps([x.filename for x in task.submission_format]) }}"/>
+          <input type="text" name="submission_format" value="{{ escape(json.dumps([x.filename for x in task.submission_format])) }}"/>
         </td>
       </tr>
       <tr>
