@@ -125,6 +125,7 @@ class Store(object):
 
         """
         # verify key
+        key = unicode(key)
         if not isinstance(key, unicode) or key in self._store:
             raise InvalidKey
         # create entity
@@ -160,6 +161,7 @@ class Store(object):
 
         """
         # verify key
+        key = unicode(key)
         if not isinstance(key, unicode) or key not in self._store:
             raise InvalidKey
         # update entity
