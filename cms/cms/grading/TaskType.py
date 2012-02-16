@@ -306,6 +306,7 @@ class TaskType:
         self.sandbox.allow_path = ['/etc/', '/lib/', '/usr/',
                                    '%s/' % (self.sandbox.path)]
         self.sandbox.allow_path += ["/proc/self/exe"]
+        self.sandbox.allow_path += ["/dev/urandom"]
         self.sandbox.timeout = 10
         self.sandbox.wallclock_timeout = 12
         self.sandbox.address_space = 256 * 1024
@@ -472,6 +473,7 @@ class TaskType:
         # These syscalls and paths are used by executables generated
         # by fpc.
         self.sandbox.allow_path += ["/proc/self/exe"]
+        self.sandbox.allow_path += ["/dev/urandom"]
         self.sandbox.allow_syscall += ["getrlimit",
                                        "rt_sigaction",
                                        "ugetrlimit"]
