@@ -308,9 +308,12 @@ class Contest(Base):
             if token_gen_time is not None:
                 # How many generation times we passed from start to
                 # the previous considered time?
-                before_prev = int((prev_time - start) / (token_gen_time * 60))
+                t = token_gen_time
+                if t == 0:
+                    t = 1
+                before_prev = int((prev_time - start) / (t * 60))
                 # And from start to the current considered time?
-                before_next = int((next_time - start) / (token_gen_time * 60))
+                before_next = int((next_time - start) / (t * 60))
                 # So...
                 return token_gen_number * (before_next - before_prev)
             else:
