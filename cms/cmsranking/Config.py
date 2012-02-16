@@ -31,7 +31,7 @@ class Config(object):
         """
         # Connection.
         self.host = 'localhost'
-        self.port = 8890
+        self.port = 18890
 
         # Authentication.
         self.realm_name = 'Scoreboard'
@@ -39,11 +39,9 @@ class Config(object):
         self.password = 'passw0rd'
 
         # File system.
-        self.lib_dir = os.path.join("/", "var", "local", "lib",
-                                    "cms", "ranking")
+        self.lib_dir = os.path.dirname(__file__)
         self.web_dir = os.path.join(os.path.dirname(__file__), "static")
-        self.log_dir = os.path.join("/", "var", "local", "log",
-                                    "cms", "ranking")
+        self.log_dir = os.path.dirname(__file__)
 
         # Logging.
         self.log_color = True
