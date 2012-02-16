@@ -44,6 +44,7 @@ from cms.async.Utils import random_string, Logger, \
 
 # Our logger object - can be a standard one (provided in Utils), or a
 # custom one provided by the class subclassing service.
+global logger
 logger = None
 
 

@@ -35,7 +35,8 @@ import codecs
 import simplejson
 
 from cms import Config
-from cms.async.AsyncLibrary import logger, async_lock
+from cms.service.LogService import logger
+from cms.async.AsyncLibrary import async_lock
 from cms.box.Sandbox import Sandbox
 from cms.db.SQLAlchemyAll import Executable, Evaluation
 from cms.grading import JobException
