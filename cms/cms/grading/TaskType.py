@@ -357,6 +357,7 @@ class TaskType:
         sandbox.allow_path = ['/etc/', '/lib/', '/usr/',
                               '%s/' % (sandbox.path)]
         sandbox.allow_path += ["/proc/self/exe"]
+        sandbox.allow_path += ["/dev/urandom"]
         sandbox.timeout = 10
         sandbox.wallclock_timeout = 20
         sandbox.address_space = 256 * 1024
@@ -422,7 +423,7 @@ class TaskType:
             return True, False, \
                    "Killed with signal %d %s\n" \
                    "This could be triggered by " \
-                   "violating memory limits\n%s" % \
+                   "violating memory limits.\n%s" % \
                    (signal, sandbox.get_stats(), compiler_output)
 
         # Sandbox error: this isn't a user error, the administrator
@@ -515,7 +516,7 @@ class TaskType:
 
         # Set sandbox parameters suitable for evaluation.
         sandbox.chdir = sandbox.path
-        sandbox.filter_syscalls = 2
+        sandbox.filter_syscalls = 1
         sandbox.timeout = time_limit
         sandbox.wallclock_timeout = 2 * time_limit
         sandbox.address_space = memory_limit * 1024
@@ -531,11 +532,14 @@ class TaskType:
         # These syscalls and paths are used by executables generated
         # by fpc.
         sandbox.allow_path += ["/proc/self/exe"]
+        sandbox.allow_path += ["/dev/urandom"]
         sandbox.allow_syscall += ["getrlimit",
                                   "rt_sigaction",
-                                  "ugetrlimit"]
+                                  "ugetrlimit",
+                                  "times"]
         # This one seems to be used for a C++ executable.
         sandbox.allow_path += ["/proc/meminfo"]
+        sandbox.allow_path += ['/etc/', '/lib/', '/usr/', '%s/' % (sandbox.path)]
 
         # Actually run the evaluation command.
         logger.info("Starting evaluation step.")
