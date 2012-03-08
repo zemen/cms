@@ -770,8 +770,6 @@ class EvaluationService(Service):
         # Compilation was ok, so we evaluate.
         if compilation_outcome == "ok":
             priority = EvaluationService.JOB_PRIORITY_LOW
-            if tokened:
-                priority = EvaluationService.JOB_PRIORITY_MEDIUM
             self.push_in_queue((EvaluationService.JOB_TYPE_EVALUATION,
                                 submission_id), priority, timestamp)
         # If instead submission failed compilation, we don't evaluate.
@@ -818,8 +816,6 @@ class EvaluationService(Service):
         # Evaluation unsuccessful, we requeue (or not).
         elif evaluation_tries <= EvaluationService.MAX_EVALUATION_TRIES:
             priority = EvaluationService.JOB_PRIORITY_LOW
-            if tokened:
-                priority = EvaluationService.JOB_PRIORITY_MEDIUM
             self.push_in_queue((EvaluationService.JOB_TYPE_EVALUATION,
                                 submission_id), priority, timestamp)
         else:
@@ -878,16 +874,7 @@ class EvaluationService(Service):
         submission_id (int): the id of the submission that changed.
 
         """
-        try:
-            self.queue.set_priority((EvaluationService.JOB_TYPE_EVALUATION,
-                                     submission_id),
-                                    EvaluationService.JOB_PRIORITY_MEDIUM)
-            logger.info("Increased priority of evaluation of submission "
-                        "%s due to token." % submission_id)
-        except LookupError:
-            # The job is not in the queue, hence we already done it.
-            pass
-
+        pass
 
 def main():
     """Parse arguments and launch service.
