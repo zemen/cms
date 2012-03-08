@@ -657,6 +657,8 @@ class SubmitHandler(BaseHandler):
             for lang in Submission.LANGUAGES:
                 if user_filename.endswith(".%s" % lang):
                     return lang
+                if user_filename.endswith(".cc"):
+                    return 'cpp'
             return None
 
         error = None
