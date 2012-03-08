@@ -198,7 +198,8 @@ class AdminWebServer(WebService):
                             _aws_handlers,
                             parameters,
                             shard=shard,
-                            custom_logger=logger)
+                            custom_logger=logger,
+                            listen_address='127.0.0.1')
         self.file_cacher = FileCacher(self)
         self.evaluation_service = self.connect_to(
             ServiceCoord("EvaluationService", 0))
