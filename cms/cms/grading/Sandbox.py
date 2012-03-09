@@ -338,6 +338,18 @@ class Sandbox:
                 return syscall_match.group(1)
         return None
 
+    def get_forbidden_file_error(self):
+        """Return the error that got us killed for forbidden file access.
+
+        return (string): offending error, or None.
+
+        """
+        if self.log is None:
+            self.get_log()
+        if 'message' in self.log:
+            return self.log['message'][0]
+        return None
+
     def get_status_list(self):
         """Reads the sandbox log file, and set and return the status
         of the sandbox.
@@ -399,7 +411,8 @@ class Sandbox:
             return "Execution killed because of forbidden syscall %s" % \
                 self.get_killing_syscall()
         elif status == self.EXIT_FILE_ACCESS:
-            return "Execution killed because of forbidden file access"
+            return "Execution killed because of forbidden file access: `%s'" \
+                    % self.get_forbidden_file_error()
         elif status == self.EXIT_TIMEOUT:
             return "Execution timed out"
         elif status == self.EXIT_SIGNAL:
