@@ -109,6 +109,7 @@ class Config:
             self.cache_dir = "cache"
             self.data_dir = "lib"
             paths = [os.path.join(".", "examples", "cms.conf"),
+                     os.path.join(".", "cms.conf"),
                      os.path.join("/", "usr", "local", "etc", "cms.conf"),
                      os.path.join("/", "etc", "cms.conf")]
 
