@@ -38,6 +38,9 @@ class ScoreTypes:
     # minimum outcome amongst the testcases in that range.
     SCORE_TYPE_GROUP_MIN = "ScoreTypeGroupMin"
 
+    # The same, with average substituting minimum.
+    SCORE_TYPE_GROUP_AVG = "ScoreTypeGroupAvg"
+
     # The same, with multiplication substituting minimum.
     SCORE_TYPE_GROUP_MUL = "ScoreTypeGroupMul"
 
@@ -80,6 +83,8 @@ class ScoreTypes:
             return ScoreTypeSum(score_parameters, public_testcases)
         elif score_type == ScoreTypes.SCORE_TYPE_GROUP_MIN:
             return ScoreTypeGroupMin(score_parameters, public_testcases)
+        elif score_type == ScoreTypes.SCORE_TYPE_GROUP_AVG:
+            return ScoreTypeGroupAvg(score_parameters, public_testcases)
         elif score_type == ScoreTypes.SCORE_TYPE_GROUP_MUL:
             return ScoreTypeGroupMul(score_parameters, public_testcases)
         elif score_type == ScoreTypes.SCORE_TYPE_RELATIVE:
@@ -313,32 +318,59 @@ class ScoreTypeSum(ScoreTypeAlone):
         return round(score * self.parameters, 2), None, \
                round(public_score * self.parameters, 2), None
 
+class ScoreTypeSubtaskGroups(ScoreTypeAlone):
+    """This scoring method uses groups of sub-tasks which can be composed of
+    any subset of test cases. Each group has a name and a weight. The actual
+    method of calculating the score for a group is defined by a derived class
+    (this class is abstract).
 
-class ScoreTypeGroupMin(ScoreTypeAlone):
-    """The score of a submission is the sum of the product of the
-    minimum of the ranges with the multiplier of that range.
+    Score parameters are: [
+        ["subtask 1 name", weight, [testcase1, testcase2, ...]],
+        ["subtask 2 name", weight, [testcase1, testcase2, ...]],
+        ...
+    ]
 
-    Parameters are [{'multiplier': m, 'testcases': t}, ... ] and this
-    means that the first group consists of the first t testcases and
-    the min will be multiplied by m.
-
+    A group with a weight of 0 will not contribute towards the score, but will
+    display with a simple PASS/FAIL indicator to the contestant. This is useful
+    for sample cases.
     """
+
+    def _compute_group_score(self, score_array):
+        """Given the individual test case results in score_array, this function
+        should return the value which the group's weight will be multiplied by
+        to obtain the final score for the group."""
+        raise NotImplementedError
+
     def max_scores(self):
-        """Compute the maximum score of a submission. FIXME: this
-        suppose that the outcomes are in [0, 1].
+        """Compute the maximum score of a submission.
+        FIXME: this suppose that the outcomes are in [0, 1].
 
         returns (float, float): maximum score overall and public.
-
         """
         public_score = 0.0
         score = 0.0
-        current = 0
-        for parameter in self.parameters:
-            next_ = current + parameter[1]
-            score += parameter[0]
-            if all(self.public_testcases[current:next_]):
-                public_score += parameter[0]
-            current = next_
+        num_total_cases = len(self.public_testcases)
+        for group in self.parameters:
+            _, max_score, cases = group
+            # Check all the cases are valid.
+            usable_cases = [x for x in cases if 0 <= x < num_total_cases]
+            if len(usable_cases) != len(cases):
+                logger.error("Task has invalid parameters (invalid cases)")
+            cases = usable_cases
+
+            if len(cases) == 0:
+                logger.error("Task has invalid parameters (empty case-list)")
+                # Technically it's undefined. We don't give the marks for an
+                # empty case list.
+                continue
+
+            # Are all the testcases in this group public?
+            public = all([self.public_testcases[x] for x in cases])
+
+            score += max_score
+            if public:
+                public_score += max_score
+
         return round(score, 2), round(public_score, 2)
 
     def compute_score(self, submission_id):
@@ -349,79 +381,74 @@ class ScoreTypeGroupMin(ScoreTypeAlone):
 
         """
         evaluations = self.pool[submission_id]["evaluations"]
-        current = 0
         scores = []
+        max_scores = []
         public_scores = []
+        max_public_scores = []
         public_index = []
-        for parameter in self.parameters:
-            next_ = current + parameter[1]
-            scores.append(min(evaluations[current:next_]) * parameter[0])
-            if all(self.public_testcases[current:next_]):
-                public_scores.append(scores[-1])
+        num_total_cases = len(self.public_testcases)
+        details = []
+        public_details = []
+        for group in self.parameters:
+            name, max_score, cases = group
+            cases = [x for x in cases if 0 <= x < num_total_cases]
+            if len(cases) == 0:
+                continue
+
+            # Are all the testcases in this group public?
+            public = all([self.public_testcases[x] for x in cases])
+
+            multiplier = self._compute_group_score([evaluations[x] for x in cases])
+            score = multiplier * max_score
+            if max_score == 0:
+                if int(round(multiplier)) == 1:
+                    result_str = "PASS"
+                else:
+                    result_str = "FAIL"
+            else:
+                result_str = "%lg" % score
+
+            detail_str = "%s: %s" % (name, result_str)
+
+            scores.append(score)
+            max_scores.append(max_score)
+            details.append(detail_str)
+            if public:
+                public_scores.append(score)
+                max_public_scores.append(max_score)
                 public_index.append(len(scores) - 1)
-            current = next_
-        details = ["Subtask %d: %lg" % (i + 1, round(score, 2))
-                   for i, score in enumerate(scores)]
-        public_details = ["Subtask %d: %lg" % (i + 1, round(score, 2))
-                          for i, score in zip(public_index, public_scores)]
-        score = sum(scores)
-        public_score = sum(public_scores)
-        return round(score, 2), details, \
-               round(public_score, 2), public_details
+                public_details.append(detail_str)
 
+        total_score = sum(scores)
+        total_public_score = sum(public_scores)
+        return round(total_score, 2), details, \
+               round(total_public_score, 2), public_details
 
-class ScoreTypeGroupMul(ScoreTypeAlone):
-    """Similar to ScoreTypeGroupMin, but with the product instead of
-    the minimum.
+class ScoreTypeGroupMin(ScoreTypeSubtaskGroups):
+    """A subtask-group-scored scheme, using the minimum score within each group.
 
+    See ScoreTypeSubtaskGroups for details.
     """
-    def max_scores(self):
-        """Compute the maximum score of a submission. FIXME: this
-        suppose that the outcomes are in [0, 1].
+    def _compute_group_score(self, score_array):
+        return min(score_array)
 
-        returns (float, float): maximum score overall and public.
+class ScoreTypeGroupAvg(ScoreTypeSubtaskGroups):
+    """A subtask-group-scored scheme, using the unweighted average score within
+    each group.
 
-        """
-        public_score = 0.0
-        score = 0.0
-        current = 0
-        for parameter in self.parameters:
-            next_ = current + parameter[1]
-            score += parameter[0]
-            if all(self.public_testcases[current:next_]):
-                public_score += parameter[0]
-            current = next_
-        return round(score, 2), round(public_score, 2)
+    See ScoreTypeSubtaskGroups for details.
+    """
+    def _compute_group_score(self, score_array):
+        return 1.0 * sum(score_array) / len(score_array)
 
-    def compute_score(self, submission_id):
-        """Compute the score of a submission.
+class ScoreTypeGroupMul(ScoreTypeSubtaskGroups):
+    """A subtask-group-scored scheme, using the product of the scores within
+    each group.
 
-        submission_id (int): the submission to evaluate.
-        returns (float): the score
-
-        """
-        evaluations = self.pool[submission_id]["evaluations"]
-        current = 0
-        scores = []
-        public_scores = []
-        public_index = []
-        for parameter in self.parameters:
-            next_ = current + parameter[1]
-            scores.append(reduce(lambda x, y: x * y,
-                                 evaluations[current:next_]) * parameter[0])
-            if all(self.public_testcases[current:next_]):
-                public_scores.append(scores[-1])
-                public_index.append(len(scores) - 1)
-            current = next_
-        details = ["Subtask %d: %lg" % (i + 1, round(score, 2))
-                   for i, score in scores]
-        public_details = ["Subtask %d: %lg" % (i + 1, round(score, 2))
-                          for i, score in zip(public_index, public_scores)]
-        score = sum(scores)
-        public_score = sum(public_scores)
-        return round(score, 2), details, \
-               round(public_score, 2), public_details
-
+    See ScoreTypeSubtaskGroups for details.
+    """
+    def _compute_group_score(self, score_array):
+        return reduce(lambda x, y: x * y, score_array)
 
 class ScoreTypeRelative(ScoreType):
     """Scoring systems where the score of a submission is the sum of

@@ -252,6 +252,9 @@ $("select[name=task_type]").change(showTaskTypeOption);
             <option value="ScoreTypeGroupMin"{% if task.score_type == "ScoreTypeGroupMin" %} selected{% end %}>
               Minimum
             </option>
+            <option value="ScoreTypeGroupAvg"{% if task.score_type == "ScoreTypeGroupAvg" %} selected{% end %}>
+              Average
+            </option>
             <option value="ScoreTypeGroupMul"{% if task.score_type == "ScoreTypeGroupMul" %} selected{% end %}>
               Multiply
             </option>
