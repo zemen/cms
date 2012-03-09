@@ -585,9 +585,10 @@ class TaskType:
             syscall = sandbox.get_killing_syscall()
             logger.info("Execution killed because of "
                         "forbidden syscall %s." % syscall)
-            return True, 0.0, "Execution killed because of " \
-                "forbidden syscall %s." % syscall
-
+            s = "Execution killed because of forbidden syscall %s." % syscall
+            if syscall == 'futex':
+                s += "  This could be triggered by memory corruption."
+            return True, 0.0, s
         # Forbidden file access: returning the error to the user.
         if exit_status == Sandbox.EXIT_FILE_ACCESS:
             error_str = sandbox.get_forbidden_file_error()
