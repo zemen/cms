@@ -348,7 +348,7 @@ def main():
         (r"/", HomeHandler)
         ])
     # application.add_transform(tornado.web.ChunkedTransferEncoding)
-    application.listen(config.port)
+    application.listen(config.port, address='127.0.0.1')
     tornado.ioloop.IOLoop.instance().start()
 
 
