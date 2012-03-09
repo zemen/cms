@@ -1105,7 +1105,7 @@ class QuestionIgnoreHandler(BaseHandler):
 
         logger.warning("Question '%s' by user %s %s" %
                 (question.subject, question.user.username,
-                    ["ignored", "unignored"][should_ignore]))
+                    ["unignored", "ignored"][should_ignore]))
 
         self.redirect(ref)
 
