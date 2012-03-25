@@ -641,8 +641,10 @@ class TaskViewHandler(BaseHandler):
             self.redirect("/task/%s" % task_id)
             return
 
-        task_type_parameters = task_type_class.parse_handler(
-            self, "TaskTypeOptions_%s_" % task.task_type)
+        task_type_parameters = ParameterTypes.parse_all(
+            task_type_class.ACCEPTED_PARAMETERS,
+            self, 
+            "TaskTypeOptions_%s_" % task.task_type)
 
         task.task_type_parameters = json.dumps(task_type_parameters)
 
@@ -711,7 +713,8 @@ class AddTaskHandler(SimpleContestHandler("add_task.html")):
             self.redirect("/add_task/%s" % contest_id)
             return
 
-        task_type_parameters = task_type_class.parse_handler(
+        task_type_parameters = ParameterTypes.parse_all(
+            task_type_class.ACCEPTED_PARAMETERS,
             self, "TaskTypeOptions_%s_" % task_type)
 
         task_type_parameters = json.dumps(task_type_parameters)

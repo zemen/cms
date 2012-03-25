@@ -36,6 +36,30 @@ class ParameterType:
 
     """
 
+    @staticmethod
+    def parse_all(accepted_param, handler, prefix):
+        """Ensure that the parameters list template agrees with the
+        parameters actually passed.
+
+        accepted_param (list): List of accepted parameters.
+        handler (Class): the Tornado handler with the parameters.
+        prefix (string): the prefix of the parameter names in the
+                         handler.
+
+        return (list): parameters list correctly formatted, or
+                       ValueError if the parameters are not correct.
+
+        """
+        new_parameters = []
+        for parameter in accepted_param:
+            try:
+                new_value = parameter.parse_handler(handler, prefix)
+                new_parameters.append(new_value)
+            except ValueError as error:
+                raise ValueError("Invalid parameter %s: %s."
+                                 % (parameter.name, error.message))
+        return new_parameters
+
     def __init__(self, name, short_name, description):
         """Initialization.
 
