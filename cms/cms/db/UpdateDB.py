@@ -48,6 +48,7 @@ class ScriptsContainer(object):
             ("20120223", "changed_batch_parameters"),
             ("20120313", "changed_batch_iofile_parameters"),
             ("20120319", "change_scoretype_names"),
+            ("20120325", "change_scoretype_sum_parameter"),
             ]
         self.list.sort()
 
@@ -348,7 +349,16 @@ class ScriptsContainer(object):
                 session.execute("UPDATE tasks SET score_type = '%s' "
                                 "WHERE score_type = 'ScoreType%s';" %
                                 (score_type, score_type))
+    @staticmethod
+    def change_scoretype_sum_parameter():
+        """Change the format of score_parameters for sum.
 
+        """
+        with SessionGen(commit=True) as session:
+            session.execute("UPDATE tasks SET score_parameters = CONCAT('[', "
+                            "score_parameters, ']') "
+                            "WHERE score_type = 'Sum' "
+                            "AND score_parameters NOT LIKE '[%]'")
 
 def execute_single_script(scripts_container, script):
     """Execute one script. Exit on errors.

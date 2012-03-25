@@ -651,10 +651,19 @@ class TaskViewHandler(BaseHandler):
             self.redirect("/task/%s" % task_id)
             return
 
-        task_type_parameters = ParameterTypes.parse_all(
-            task_type_class.ACCEPTED_PARAMETERS,
-            self, 
-            "TaskTypeOptions_%s_" % task.task_type)
+        try:
+            task_type_parameters = ParameterTypes.parse_all(
+                task_type_class.ACCEPTED_PARAMETERS,
+                self, 
+                "TaskTypeOptions_%s_" % task.task_type)
+        except ValueError as e:
+            # Invalid task type parameters.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid task type parameters",
+                "%s" % e.message)
+            self.redirect("/task/%s" % task_id)
+            return
 
         task.task_type_parameters = json.dumps(task_type_parameters)
 
@@ -673,10 +682,19 @@ class TaskViewHandler(BaseHandler):
             self.redirect("/task/%s" % task_id)
             return
 
-        score_parameters = ParameterTypes.parse_all(
-            score_type_class.ACCEPTED_PARAMETERS,
-            self, 
-            "ScoreTypeOptions_%s_" % task.score_type)
+        try:
+            score_parameters = ParameterTypes.parse_all(
+                score_type_class.ACCEPTED_PARAMETERS,
+                self, 
+                "ScoreTypeOptions_%s_" % task.score_type)
+        except ValueError as e:
+            # Invalid score parameters.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid score parameters",
+                "%s" % e.message)
+            self.redirect("/task/%s" % task_id)
+            return
 
         task.score_parameters = json.dumps(score_parameters)
 
@@ -750,11 +768,19 @@ class AddTaskHandler(BaseHandler):
                 "Task type not recognized: %s." % task_type)
             self.redirect("/add_task/%s" % contest_id)
             return
-
-        task_type_parameters = ParameterTypes.parse_all(
-            task_type_class.ACCEPTED_PARAMETERS,
-            self, "TaskTypeOptions_%s_" % task_type)
-
+        
+        try:
+            task_type_parameters = ParameterTypes.parse_all(
+                task_type_class.ACCEPTED_PARAMETERS,
+                self, "TaskTypeOptions_%s_" % task_type)
+        except ValueError as e:
+            # Invalid task type parameters.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid task type parameters",
+                "%s" % e.message)
+            self.redirect("/task/%s" % task_id)
+            return
         task_type_parameters = json.dumps(task_type_parameters)
 
 
@@ -773,10 +799,19 @@ class AddTaskHandler(BaseHandler):
             self.redirect("/task/%s" % task_id)
             return
 
-        score_parameters = ParameterTypes.parse_all(
-            score_type_class.ACCEPTED_PARAMETERS,
-            self, 
-            "ScoreTypeOptions_%s_" % score_type)
+        try:
+            score_parameters = ParameterTypes.parse_all(
+                score_type_class.ACCEPTED_PARAMETERS,
+                self, 
+                "ScoreTypeOptions_%s_" % score_type)
+        except ValueError as e:
+            # Invalid score parameters.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid score parameters",
+                "%s" % e.message)
+            self.redirect("/task/%s" % task_id)
+            return
 
         score_parameters = json.dumps(score_parameters)
 
