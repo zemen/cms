@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cms.grading.ScoreType import ScoreTypeAlone
+from cms.grading.ParameterTypes import ParameterTypeFloat
 
 
 class Sum(ScoreTypeAlone):
@@ -27,6 +28,10 @@ class Sum(ScoreTypeAlone):
     multiplied by the integer parameter.
 
     """
+
+    ACCEPTED_PARAMETERS = [ParameterTypeFloat("Multiplier",
+        "multiplier", "")]
+
     def max_scores(self):
         """Compute the maximum score of a submission. FIXME: this
         suppose that the outcomes are in [0, 1].
@@ -36,9 +41,10 @@ class Sum(ScoreTypeAlone):
         """
         public_score = 0.0
         score = 0.0
+        multiplier = self.parameters[0]
         for public in self.public_testcases:
             if public:
-                public_score += self.parameters
+                public_score += multiplier
             score += self.parameters
         return round(score, 2), round(public_score, 2)
 
@@ -52,9 +58,10 @@ class Sum(ScoreTypeAlone):
         evaluations = self.pool[submission_id]["evaluations"]
         public_score = 0.0
         score = 0.0
+        multiplier = self.parameters[0]
         for evaluation, public in zip(evaluations, self.public_testcases):
             if public:
                 public_score += evaluation
             score += evaluation
-        return round(score * self.parameters, 2), None, \
-               round(public_score * self.parameters, 2), None
+        return round(score * multiplier, 2), None, \
+               round(public_score * multiplier, 2), None

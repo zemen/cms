@@ -20,6 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cms.grading.ScoreType import ScoreTypeAlone
+from cms.grading.ParameterTypes import ParameterTypeCollection, \
+    ParameterTypeFloat, ParameterTypeInt, ParameterTypeArray
 
 
 class GroupMul(ScoreTypeAlone):
@@ -27,6 +29,19 @@ class GroupMul(ScoreTypeAlone):
     the minimum.
 
     """
+    _PARAMETER_GROUP = ParameterTypeCollection(
+                        "Group",
+                        "group",
+                        "",
+                        [ParameterTypeFloat("Multiplier","multiplier",""),
+                         ParameterTypeInt("Number of testcases","ntest","")])
+
+    ACCEPTED_PARAMETERS = [ParameterTypeArray(
+                        "Testcase Groups",
+                        "groups",
+                        "",
+                        _PARAMETER_GROUP)]
+
     def max_scores(self):
         """Compute the maximum score of a submission. FIXME: this
         suppose that the outcomes are in [0, 1].

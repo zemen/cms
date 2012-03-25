@@ -29,6 +29,7 @@ import simplejson as json
 import time
 import datetime
 import imp
+import pkgutil
 import codecs
 import netifaces
 from argparse import ArgumentParser
@@ -520,6 +521,25 @@ def plugin_lookup(plugin_name, plugin_dir, plugin_family):
 
     return module.__dict__[plugin_name]
 
+def plugin_list(plugin_dir, plugin_family):
+
+    modules = []
+
+    package_loader = pkgutil.find_loader(plugin_dir)
+    if package_loader is None:
+        logger.warning("Failed to import %s", package)
+        return []
+
+    package_dir = os.path.dirname(package_loader.get_filename())
+
+    # Plugins provided by CMS by default.
+
+    modules = [name for _, name, _ in pkgutil.iter_modules(
+        [package_dir, os.path.join(
+            config.data_dir, "plugins", plugin_family)])
+    ]
+
+    return modules
 
 ## Other utilities. ##
 

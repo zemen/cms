@@ -31,34 +31,34 @@ by JSON objects.
 from tornado.template import Template
 
 
+def parse_all(accepted_param, handler, prefix):
+    """Ensure that the parameters list template agrees with the
+    parameters actually passed.
+
+    accepted_param (list): List of accepted parameters.
+    handler (Class): the Tornado handler with the parameters.
+    prefix (string): the prefix of the parameter names in the
+                     handler.
+
+    return (list): parameters list correctly formatted, or
+                   ValueError if the parameters are not correct.
+
+    """
+    new_parameters = []
+    for parameter in accepted_param:
+        try:
+            new_value = parameter.parse_handler(handler, prefix)
+            new_parameters.append(new_value)
+        except ValueError as error:
+            raise ValueError("Invalid parameter %s: %s."
+                             % (parameter.name, error.message))
+    return new_parameters
+
+
 class ParameterType:
     """Base class for parameter types.
 
     """
-
-    @staticmethod
-    def parse_all(accepted_param, handler, prefix):
-        """Ensure that the parameters list template agrees with the
-        parameters actually passed.
-
-        accepted_param (list): List of accepted parameters.
-        handler (Class): the Tornado handler with the parameters.
-        prefix (string): the prefix of the parameter names in the
-                         handler.
-
-        return (list): parameters list correctly formatted, or
-                       ValueError if the parameters are not correct.
-
-        """
-        new_parameters = []
-        for parameter in accepted_param:
-            try:
-                new_value = parameter.parse_handler(handler, prefix)
-                new_parameters.append(new_value)
-            except ValueError as error:
-                raise ValueError("Invalid parameter %s: %s."
-                                 % (parameter.name, error.message))
-        return new_parameters
 
     def __init__(self, name, short_name, description):
         """Initialization.
@@ -96,7 +96,7 @@ class ParameterType:
         return self.parse_string(handler.get_argument(
             prefix + self.short_name))
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         raise NotImplementedError("Please subclass this class.")
 
 
@@ -112,7 +112,7 @@ class ParameterTypeString(ParameterType):
         """
         return value
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         return Template(self.TEMPLATE).generate(
             parameter_name=prefix + self.short_name,
             parameter_value=previous_value)
@@ -122,7 +122,7 @@ class ParameterTypeFloat(ParameterType):
     """Numeric parameter type.
     """
 
-    TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}} \"" \
+    TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}}\" " \
                        "value=\"{{parameter_value}}\" />"
 
     def parse_string(self, value):
@@ -131,7 +131,7 @@ class ParameterTypeFloat(ParameterType):
         """
         return float(value)
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         return Template(self.TEMPLATE).generate(
             parameter_name=prefix + self.short_name,
             parameter_value=previous_value)
@@ -141,7 +141,7 @@ class ParameterTypeInt(ParameterType):
     """Numeric parameter type.
     """
 
-    TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}} \"" \
+    TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}}\" " \
                         "value=\"{{parameter_value}}\" />"
 
     def parse_string(self, value):
@@ -150,7 +150,7 @@ class ParameterTypeInt(ParameterType):
         """
         return int(value)
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         return Template(self.TEMPLATE).generate(
             parameter_name=prefix + self.short_name,
             parameter_value=previous_value)
@@ -160,7 +160,7 @@ class ParameterTypeBoolean(ParameterType):
     """Boolean parameter type.
     """
 
-    TEMPLATE = "<input type=\"checkbox\" name=\"{{parameter_name}} \"" \
+    TEMPLATE = "<input type=\"checkbox\" name=\"{{parameter_name}}\" " \
                         "{% if checked %}checked{% end %} />"
 
     def parse_string(self, value):
@@ -168,7 +168,7 @@ class ParameterTypeBoolean(ParameterType):
         """
         return value is not None
 
-    def render(self, prefix, previous_value=False):
+    def render(self, prefix, previous_value=False, **kwargs):
         return Template(self.TEMPLATE).generate(
             parameter_name=prefix + self.short_name,
             enabled=(previous_value == True))
@@ -209,7 +209,7 @@ class ParameterTypeChoice(ParameterType):
                  % value)
         return value
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         return Template(self.TEMPLATE).generate(
             parameter_name=prefix + self.short_name,
             choices=self.values,
@@ -222,11 +222,15 @@ class ParameterTypeArray(ParameterType):
     Only a single sub-parameter type is supported.
     """
 
-    TEMPLATE = "<a href=\"#\">Add element</a>" \
+    TEMPLATE = "<a href=\"#\" class=\"add_element\">" \
+               "Add element</a>" \
                "<table>" \
                "{% for element in elements%}" \
-               "<tr><td>{{element.name}}</td>" \
-               "<td>{% raw element.content %}</td>" \
+               "<tr id=\"\" class=\"element_row\">" \
+               "<td>{{element['name']}} {{element['number']}}</td>" \
+               "<td>{% raw element['content'] %}</td>" \
+               "<td><a href=\"#\" class=\"remove_element\">Remove</a>" \
+               "</td></tr>" \
                "{% end %}" \
                "</table>"
 
@@ -247,16 +251,61 @@ class ParameterTypeArray(ParameterType):
                 self.subparameter.parse_handler(handler, new_prefix))
         return parsed_values
 
-    def render(self, prefix, previous_value=[]):
+    def render(self, prefix, previous_value=None, **kwargs):
         elements = []
-        for i in range(len(previous_value)):
+        if previous_value == None:
+            previous_value = []
+        for i, subparam_value in enumerate(previous_value):
             subparam_value = previous_value[i]
             new_prefix = "%s%s_%d_" % (prefix, self.short_name, i)
             elements.append({
                 "name": self.subparameter.name,
+                "number": i,
                 "content": self.subparameter.render(new_prefix,
                     subparam_value)})
         return Template(self.TEMPLATE).generate(elements=elements)
+
+class ParameterTypeTestcase(ParameterTypeArray):
+    """Like ParameterTypeArray, but has one element for each testcase.
+    
+    A default value is applied to subparameters when the number
+    of testcases changes.
+    """
+
+    TEMPLATE = "<table>" \
+               "{% for element in elements%}" \
+               "<tr id=\"\" class=\"element_row\">" \
+               "<td>{{element['name']}} {{element['number']}}</td>" \
+               "<td>{% raw element['content'] %}</td>" \
+               "</tr>" \
+               "{% end %}" \
+               "</table>"
+
+    def __init__(self, name, short_name, description, subparameter, default_value):
+        ParameterTypeArray.__init__(self, name, short_name, description, subparameter)
+        self.default_value = default_value
+
+    def parse_handler(self, handler, prefix):
+        pass
+
+    def render(self, prefix, previous_value=[], **kwargs):
+        if previous_value is None:
+            previous_value = []
+        elements = []
+        if kwargs.has_key("task") and kwargs["task"] is not None:
+            task = kwargs["task"]
+            for i in range(len(task.testcases)):
+                subparam_value = previous_value[i] \
+                    if i < len(previous_value) else self.default_value
+                new_prefix = "%s%s_%d_" % (prefix, self.short_name , i)
+                elements.append({
+                    "name": self.subparameter.name,
+                    "number": i,
+                    "content": self.subparameter.render(new_prefix,
+                        subparam_value, task = task)})
+            return Template(self.TEMPLATE).generate(elements=elements)
+        else:
+            return "<i>Insert some testcases first.</i>"
 
 
 class ParameterTypeCollection(ParameterType):
@@ -285,7 +334,7 @@ class ParameterTypeCollection(ParameterType):
                 self.subparameters[i].parse_handler(handler, new_prefix))
         return parsed_values
 
-    def render(self, prefix, previous_value=None):
+    def render(self, prefix, previous_value=None, **kwargs):
         elements = []
         for i in range(len(self.subparameters)):
             try:

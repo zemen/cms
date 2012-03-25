@@ -11,15 +11,18 @@ function showTaskTypeOption() {
 showTaskTypeOption();
 $("select[name=task_type]").change(showTaskTypeOption);
 
+function showScoreTypeOption() {
+    var selector = $("select[name=score_type]")[0];
+    $(".ScoreTypeOptions:visible").hide("fast");
+    $("#ScoreType" + selector.options[selector.selectedIndex].value + "Options").show("fast")
+};
+
+showScoreTypeOption();
+$("select[name=score_type]").change(showScoreTypeOption);
+
 {% end %}
 
 {% block core %}
-
-{% comment TODO: Dynamic loading of task types %}
-{% from cms.grading.tasktypes.Batch import Batch %}
-{% from cms.grading.tasktypes.OutputOnly import OutputOnly %}
-{% from cms.grading.tasktypes.Communication import Communication %}
-{% set task_type_list = [Batch, OutputOnly, Communication] %}
 
 <div class="core_title">
   <h1>New task</h1>
@@ -106,20 +109,29 @@ $("select[name=task_type]").change(showTaskTypeOption);
       <tr>
         <td>Score Type</td>
         <td>
-          {% comment TODO: Fetch the score types from ScoreType. %}
-
           <select name="score_type">
-            <option value="Sum">Sum</option>
-            <option value="GroupMin">Minimum</option>
-            <option value="GroupMul">Multiply</option>
-            <option value="Relative">Relative</option>
+            {% for st in score_type_list %}
+            <option value="{{st.__name__}}">
+              {{st.__name__}}
+            </option>
+            {% end %}
           </select>
 
+          {% for st in score_type_list %}
+          <table class="ScoreTypeOptions bordered" id="ScoreType{{ st.__name__ }}Options" style="display: none;">
+          {% for i, param_def in enumerate(st.ACCEPTED_PARAMETERS) %}
+            <tr>
+                <td>{{ param_def.name }}</td>
+                <td>
+                    {% raw param_def.render( "ScoreTypeOptions_%s_" % st.__name__ ) %}
+                </td>
+            </tr>
+          {% end %}
+          </table>
+          {% end %}
+
+
         </td>
-      </tr>
-      <tr>
-        <td>Score Parameters</td>
-        <td><input type="text" name="score_parameters"/></td>
       </tr>
     </table>
     <div class="hr"></div>

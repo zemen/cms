@@ -37,6 +37,11 @@ class ScoreType:
     defined here.
 
     """
+
+    # A list of all the accepted parameters for this score type.
+    # Each item is an instance of ParameterType.
+    ACCEPTED_PARAMETERS = []
+
     def __init__(self, parameters, public_testcases):
         """Initializer.
 

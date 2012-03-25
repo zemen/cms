@@ -11,15 +11,19 @@ function showTaskTypeOption() {
 showTaskTypeOption();
 $("select[name=task_type]").change(showTaskTypeOption);
 
+function showScoreTypeOption() {
+    var selector = $("select[name=score_type]")[0];
+    $(".ScoreTypeOptions:visible").hide("fast");
+    $("#ScoreType" + selector.options[selector.selectedIndex].value + "Options").show("fast")
+};
+
+showScoreTypeOption();
+$("select[name=score_type]").change(showScoreTypeOption);
+
 {% end %}
 
 {% block core %}
 {% from cms.grading.scoretypes import get_score_type %}
-{% comment TODO: Dynamic loading of task types %}
-{% from cms.grading.tasktypes.Batch import Batch %}
-{% from cms.grading.tasktypes.OutputOnly import OutputOnly %}
-{% from cms.grading.tasktypes.Communication import Communication %}
-{% set task_type_list = [Batch, OutputOnly, Communication] %}
 
 <div class="core_title">
   <h1>{{ task.title }} ({{ task.name }})</h1>
@@ -210,8 +214,7 @@ $("select[name=task_type]").change(showTaskTypeOption);
 
         {% for task_type in task_type_list %}
         <table class="TaskTypeOptions bordered" id="TaskType{{ task_type.__name__ }}Options" style="display: none;">
-          {% for i in range(len(task_type.ACCEPTED_PARAMETERS)) %}
-            {% set param_def = task_type.ACCEPTED_PARAMETERS[i] %}
+          {% for i, param_def in enumerate(task_type.ACCEPTED_PARAMETERS) %}
             {% set parameter_value = parameters[i] if task.task_type == task_type.__name__ and parameters is not None and i < len(parameters) else None %}
             <tr>
                 <td>{{ param_def.name }}</td>
@@ -254,24 +257,31 @@ $("select[name=task_type]").change(showTaskTypeOption);
             TODO: Fetch the score types from ScoreType.
           -->
           <select name="score_type">
-            <option value="Sum"{% if task.score_type == "Sum" %} selected{% end %}>
-              Sum
+            {% for st in score_type_list %}
+            <option value="{{st.__name__}}"{% if task.score_type == st.__name__ %} selected{% end %}>
+              {{st.__name__}}
             </option>
-            <option value="GroupMin"{% if task.score_type == "GroupMin" %} selected{% end %}>
-              Minimum
-            </option>
-            <option value="GroupMul"{% if task.score_type == "GroupMul" %} selected{% end %}>
-              Multiply
-            </option>
-            <option value="Relative"{% if task.score_type == "Relative" %} selected{% end %}>
-              Relative
-            </option>
+            {% end %}
           </select>
+
+          {% set parameters = json.loads(task.score_parameters) if task.score_parameters != '' else None %}
+
+          {% for st in score_type_list %}
+          <table class="ScoreTypeOptions bordered" id="ScoreType{{ st.__name__ }}Options" style="display: none;">
+          {% for i, param_def in enumerate(st.ACCEPTED_PARAMETERS) %}
+            {% set parameter_value = parameters[i] if task.score_type == st.__name__ and parameters is not None and i < len(parameters) else None %}
+            <tr>
+                <td>{{ param_def.name }}</td>
+                <td>
+                    {% raw param_def.render( "ScoreTypeOptions_%s_" % st.__name__ , parameter_value, task=task) %}
+                </td>
+            </tr>
+          {% end %}
+          </table>
+          {% end %}
+
+
         </td>
-      </tr>
-      <tr>
-        <td>Score Parameters</td>
-        <td><input type="text" name="score_parameters" value="{{ task.score_parameters }}"/></td>
       </tr>
     </table>
     <div class="hr"></div>

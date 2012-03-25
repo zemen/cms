@@ -20,6 +20,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from cms.grading.ScoreType import ScoreType
+from cms.grading.ParameterTypes import ParameterTypeFloat, ParameterTypeTestcase
 
 
 class Relative(ScoreType):
@@ -33,6 +34,17 @@ class Relative(ScoreType):
     score is multiplied by a multiplier given as parameter.
 
     """
+
+    ACCEPTED_PARAMETERS = [ParameterTypeFloat("Multiplier", "multiplier",""),
+                           ParameterTypeTestcase("Basic outcomes",
+                           "basic_outcomes",
+                           "Basic outcomes for each testcase",
+                           ParameterTypeFloat("Basic outcome for testcase",
+                           "basic_outcome",
+                           "Basic outcome for this testcase"
+                           ), \
+                           1.0)]
+
     def initialize(self):
         """Init.
 

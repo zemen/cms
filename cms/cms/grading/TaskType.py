@@ -212,7 +212,7 @@ class TaskType:
     ALLOW_PARTIAL_SUBMISSION = False
 
     # A list of all the accepted parameters for this task type.
-    # Each item is an instance of TaskTypeParameter.
+    # Each item is an instance of ParameterType.
     ACCEPTED_PARAMETERS = []
 
     def __init__(self, submission, parameters, file_cacher):

@@ -31,17 +31,25 @@ import simplejson as json
 import tornado.web
 import tornado.locale
 
-from cms import config, default_argument_parser, logger
+from cms import config, default_argument_parser, logger, plugin_lookup
 from cms.async.WebAsyncLibrary import WebService
 from cms.async import ServiceCoord, get_service_shards, get_service_address
 from cms.db.FileCacher import FileCacher
 from cms.db.SQLAlchemyAll import Session, \
      Contest, User, Announcement, Question, Message, Submission, File, Task, \
      Attachment, Manager, Testcase, SubmissionFormatElement
+from cms.grading import ParameterTypes
 from cms.grading.tasktypes import get_task_type
 from cms.server import file_handler_gen, catch_exceptions, get_url_root, \
      CommonRequestHandler
 
+from cms import plugin_list, plugin_lookup
+
+score_type_list = [plugin_lookup(name, "cms.grading.scoretypes", "scoretypes") 
+    for name in plugin_list("cms.grading.scoretypes", "scoretypes") ]
+
+task_type_list = [plugin_lookup(name, "cms.grading.tasktypes", "tasktypes") 
+    for name in plugin_list("cms.grading.tasktypes", "tasktypes") ]
 
 def valid_ip(ip_address):
     """Return True if ip_address is a valid IPv4 address.
@@ -573,6 +581,8 @@ class TaskViewHandler(BaseHandler):
         r_params["submissions"] = self.sql_session.query(Submission)\
                                   .join(Task).filter(Task.id == task_id)\
                                   .order_by(Submission.timestamp.desc()).all()
+        r_params["task_type_list"] = task_type_list
+        r_params["score_type_list"] = score_type_list
         self.render("task.html", **r_params)
 
     def post(self, task_id):
@@ -650,7 +660,25 @@ class TaskViewHandler(BaseHandler):
 
         task.score_type = self.get_argument("score_type", "")
 
-        task.score_parameters = self.get_argument("score_parameters", "")
+        # Look for a score type with the specified name.
+        try:
+            score_type_class = plugin_lookup(task.score_type,
+                        "cms.grading.scoretypes", "scoretypes")
+        except KeyError:
+            # Score type not found.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid field",
+                "Score type not recognized: %s." % task.score_type)
+            self.redirect("/task/%s" % task_id)
+            return
+
+        score_parameters = ParameterTypes.parse_all(
+            score_type_class.ACCEPTED_PARAMETERS,
+            self, 
+            "ScoreTypeOptions_%s_" % task.score_type)
+
+        task.score_parameters = json.dumps(score_parameters)
 
         submission_format = self.get_argument("submission_format", "")
         if submission_format not in ["", "[]"] \
@@ -691,7 +719,17 @@ class TaskStatementViewHandler(FileHandler):
         self.fetch(statement, "application/pdf", "%s.pdf" % task_name)
 
 
-class AddTaskHandler(SimpleContestHandler("add_task.html")):
+class AddTaskHandler(BaseHandler):
+    @catch_exceptions
+    def get(self, contest_id):
+        self.contest = self.safe_get_item(Contest, contest_id)
+
+        r_params = self.render_params()
+        r_params["task_type_list"] = task_type_list
+        r_params["score_type_list"] = score_type_list
+        self.render("add_task.html", **r_params)
+
+
     def post(self, contest_id):
         self.contest = self.safe_get_item(Contest, contest_id)
 
@@ -718,6 +756,30 @@ class AddTaskHandler(SimpleContestHandler("add_task.html")):
             self, "TaskTypeOptions_%s_" % task_type)
 
         task_type_parameters = json.dumps(task_type_parameters)
+
+
+        score_type = self.get_argument("score_type", "")
+
+        # Look for a score type with the specified name.
+        try:
+            score_type_class = plugin_lookup(score_type,
+                        "cms.grading.scoretypes", "scoretypes")
+        except KeyError:
+            # Score type not found.
+            self.application.service.add_notification(
+                int(time.time()),
+                "Invalid field",
+                "Score type not recognized: %s." % score_type)
+            self.redirect("/task/%s" % task_id)
+            return
+
+        score_parameters = ParameterTypes.parse_all(
+            score_type_class.ACCEPTED_PARAMETERS,
+            self, 
+            "ScoreTypeOptions_%s_" % score_type)
+
+        score_parameters = json.dumps(score_parameters)
+
 
         submission_format_choice = self.get_argument("submission_format", "")
 
@@ -748,8 +810,6 @@ class AddTaskHandler(SimpleContestHandler("add_task.html")):
             self.redirect("/add_task/%s" % contest_id)
             return
 
-        score_type = self.get_argument("score_type", "")
-        score_parameters = self.get_argument("score_parameters", "")
 
         attachments = {}
         statement = ""
