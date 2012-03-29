@@ -2,6 +2,56 @@
 
 {% block js_init %}
 
+TASK_TESTCASES = {{ len(task.testcases) }}
+
+$(document).ready(function(){
+    {% set task_type_parameters = json.loads(task.task_type_parameters) if task.task_type_parameters != '' else None %}
+
+    var ttp_container;
+    var ttp_content;
+    var ttp;
+    {% for task_type in task_type_list %}
+        ttp_container = $("#TaskType{{ task_type.__name__ }}Options");
+        {% for i, param_def in enumerate(task_type.ACCEPTED_PARAMETERS) %}
+            {% set parameter_value = task_type_parameters[i] \
+                if task.task_type == task_type.__name__ \
+                  and task_type_parameters is not None \
+                  and i < len(task_type_parameters) \
+                else None %}
+            ttp_content = ttp_container.children("tbody").children("tr").eq({{i}}).children("td").eq(1);
+            ttp = CMSInstantiateParameter({% raw json.dumps(param_def.json()) %},
+                 "TaskTypeOptions_{{ task_type.__name__ }}_",
+                 {% raw json.dumps(parameter_value) %});
+            ttp.render(ttp_content);
+        {% end %}
+
+    {% end %}
+    
+    
+    {% set score_parameters = json.loads(task.score_parameters) if task.score_parameters != '' else None %}
+
+    var sp_container;
+    var sp_content;
+    var sp;
+    {% for score_type in score_type_list %}
+        sp_container = $("#ScoreType{{ score_type.__name__ }}Options");
+        {% for i, param_def in enumerate(score_type.ACCEPTED_PARAMETERS) %}
+            {% set parameter_value = score_parameters[i] \
+                if task.score_type == score_type.__name__ \
+                  and score_parameters is not None \
+                  and i < len(score_parameters) \
+                else None %}
+            sp_content = sp_container.children("tbody").children("tr").eq({{i}}).children("td").eq(1);
+            sp = CMSInstantiateParameter({% raw json.dumps(param_def.json()) %},
+                 "ScoreTypeOptions_{{ score_type.__name__ }}_",
+                 {% raw json.dumps(parameter_value) %});
+            sp.render(sp_content);
+        {% end %}
+
+    {% end %}
+    
+});
+
 function showTaskTypeOption() {
     var selector = $("select[name=task_type]")[0];
     $(".TaskTypeOptions:visible").hide("fast");
@@ -10,6 +60,7 @@ function showTaskTypeOption() {
 
 showTaskTypeOption();
 $("select[name=task_type]").change(showTaskTypeOption);
+$("form").bind("reset", function(){setTimeout(showTaskTypeOption,1)});
 
 function showScoreTypeOption() {
     var selector = $("select[name=score_type]")[0];
@@ -19,6 +70,7 @@ function showScoreTypeOption() {
 
 showScoreTypeOption();
 $("select[name=score_type]").change(showScoreTypeOption);
+$("form").bind("reset", function(){setTimeout(showScoreTypeOption,1)});
 
 {% end %}
 
@@ -219,7 +271,6 @@ $("select[name=score_type]").change(showScoreTypeOption);
             <tr>
                 <td>{{ param_def.name }}</td>
                 <td>
-                    {% raw param_def.render( "TaskTypeOptions_%s_" % task_type.__name__ , parameter_value) %}
                 </td>
             </tr>
           {% end %}
@@ -273,7 +324,6 @@ $("select[name=score_type]").change(showScoreTypeOption);
             <tr>
                 <td>{{ param_def.name }}</td>
                 <td>
-                    {% raw param_def.render( "ScoreTypeOptions_%s_" % st.__name__ , parameter_value, task=task) %}
                 </td>
             </tr>
           {% end %}

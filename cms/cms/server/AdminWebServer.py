@@ -655,7 +655,8 @@ class TaskViewHandler(BaseHandler):
             task_type_parameters = ParameterTypes.parse_all(
                 task_type_class.ACCEPTED_PARAMETERS,
                 self, 
-                "TaskTypeOptions_%s_" % task.task_type)
+                "TaskTypeOptions_%s_" % task.task_type,
+                task = task)
         except ValueError as e:
             # Invalid task type parameters.
             self.application.service.add_notification(
@@ -686,7 +687,8 @@ class TaskViewHandler(BaseHandler):
             score_parameters = ParameterTypes.parse_all(
                 score_type_class.ACCEPTED_PARAMETERS,
                 self, 
-                "ScoreTypeOptions_%s_" % task.score_type)
+                "ScoreTypeOptions_%s_" % task.score_type,
+                task = task)
         except ValueError as e:
             # Invalid score parameters.
             self.application.service.add_notification(

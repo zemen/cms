@@ -31,7 +31,7 @@ by JSON objects.
 from tornado.template import Template
 
 
-def parse_all(accepted_param, handler, prefix):
+def parse_all(accepted_param, handler, prefix, **kwargs):
     """Ensure that the parameters list template agrees with the
     parameters actually passed.
 
@@ -47,7 +47,7 @@ def parse_all(accepted_param, handler, prefix):
     new_parameters = []
     for parameter in accepted_param:
         try:
-            new_value = parameter.parse_handler(handler, prefix)
+            new_value = parameter.parse_handler(handler, prefix, **kwargs)
             new_parameters.append(new_value)
         except ValueError as error:
             raise ValueError("Invalid parameter %s: %s."
@@ -84,7 +84,7 @@ class ParameterType:
         """
         raise NotImplementedError("Please subclass this class.")
 
-    def parse_handler(self, handler, prefix):
+    def parse_handler(self, handler, prefix, **kwargs):
         """Parse relevant parameters in the handler.
 
         Attempts to parse any relevant parameters in the specified handler.
@@ -99,6 +99,14 @@ class ParameterType:
     def render(self, prefix, previous_value=None, **kwargs):
         raise NotImplementedError("Please subclass this class.")
 
+    def json(self):
+        return {
+            "type": self.TYPE,
+            "name": self.name,
+            "short_name": self.short_name,
+            "description": self.description
+            }
+
 
 class ParameterTypeString(ParameterType):
     """String parameter type.
@@ -106,6 +114,8 @@ class ParameterTypeString(ParameterType):
 
     TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}}\" " \
                         "value=\"{{parameter_value}}\" />"
+
+    TYPE = "string";
 
     def parse_string(self, value):
         """Returns the specified string.
@@ -124,6 +134,8 @@ class ParameterTypeFloat(ParameterType):
 
     TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}}\" " \
                        "value=\"{{parameter_value}}\" />"
+
+    TYPE = "float";
 
     def parse_string(self, value):
         """Attempts to parse the specified string as a float and
@@ -144,6 +156,8 @@ class ParameterTypeInt(ParameterType):
     TEMPLATE = "<input type=\"text\" name=\"{{parameter_name}}\" " \
                         "value=\"{{parameter_value}}\" />"
 
+    TYPE = "int"
+
     def parse_string(self, value):
         """Attempts to parse the specified string as a float and
         returns the parsed value.
@@ -162,6 +176,8 @@ class ParameterTypeBoolean(ParameterType):
 
     TEMPLATE = "<input type=\"checkbox\" name=\"{{parameter_name}}\" " \
                         "{% if checked %}checked{% end %} />"
+
+    TYPE = "boolean";
 
     def parse_string(self, value):
         """Returns True if the value is not None.
@@ -190,6 +206,8 @@ class ParameterTypeChoice(ParameterType):
                "{% end %}" \
                "</select>"
 
+    TYPE = "choice"
+
     def __init__(self, name, short_name, description, values):
         """
         values (dict): Short descriptions of the accepted choices,
@@ -215,6 +233,11 @@ class ParameterTypeChoice(ParameterType):
             choices=self.values,
             parameter_value=previous_value)
 
+    def json(self):
+        description = ParameterType.json(self)
+        description["choices"] = self.values
+        return description
+
 
 class ParameterTypeArray(ParameterType):
     """Parameter type representing an arbitrary-size array of sub-parameters.
@@ -234,21 +257,24 @@ class ParameterTypeArray(ParameterType):
                "{% end %}" \
                "</table>"
 
+    TYPE = "array"
+
     def __init__(self, name, short_name, description, subparameter):
         ParameterType.__init__(self, name, short_name, description)
         self.subparameter = subparameter
 
     def parse_string(self, value):
-        pass
+        raise NotImplementedError("Use parse_handler.")
 
-    def parse_handler(self, handler, prefix):
+    def parse_handler(self, handler, prefix, **kwargs):
         parsed_values = []
         i = 0
-        old_prefix = "%s%s_%d" % (prefix, self.short_name, i)
-        while handler.get_argument(old_prefix) is not None:
+        rows = [int(x) for x in 
+            handler.get_arguments("%s%s_has_row" % (prefix, self.short_name))]
+        for i in rows:
             new_prefix = "%s%s_%d_" % (prefix, self.short_name, i)
             parsed_values.append(
-                self.subparameter.parse_handler(handler, new_prefix))
+                self.subparameter.parse_handler(handler, new_prefix, **kwargs))
         return parsed_values
 
     def render(self, prefix, previous_value=None, **kwargs):
@@ -264,6 +290,11 @@ class ParameterTypeArray(ParameterType):
                 "content": self.subparameter.render(new_prefix,
                     subparam_value)})
         return Template(self.TEMPLATE).generate(elements=elements)
+
+    def json(self):
+        description = ParameterType.json(self)
+        description["subparameter"] = self.subparameter.json()
+        return description
 
 class ParameterTypeTestcase(ParameterTypeArray):
     """Like ParameterTypeArray, but has one element for each testcase.
@@ -281,12 +312,21 @@ class ParameterTypeTestcase(ParameterTypeArray):
                "{% end %}" \
                "</table>"
 
+    TYPE = "testcase"
+
     def __init__(self, name, short_name, description, subparameter, default_value):
         ParameterTypeArray.__init__(self, name, short_name, description, subparameter)
         self.default_value = default_value
 
-    def parse_handler(self, handler, prefix):
-        pass
+    def parse_handler(self, handler, prefix, **kwargs):
+        parsed_values = []
+        if kwargs.has_key("task") and kwargs["task"] is not None:
+            for i in xrange(len(kwargs["task"].testcases)):
+                new_prefix = "%s%s_%d_" % (prefix, self.short_name, i)
+                parsed_element_value = self.subparameter.parse_handler(
+                    handler, new_prefix, **kwargs)
+                parsed_values.append(parsed_element_value)
+        return parsed_values
 
     def render(self, prefix, previous_value=[], **kwargs):
         if previous_value is None:
@@ -294,7 +334,7 @@ class ParameterTypeTestcase(ParameterTypeArray):
         elements = []
         if kwargs.has_key("task") and kwargs["task"] is not None:
             task = kwargs["task"]
-            for i in range(len(task.testcases)):
+            for i in xrange(len(task.testcases)):
                 subparam_value = previous_value[i] \
                     if i < len(previous_value) else self.default_value
                 new_prefix = "%s%s_%d_" % (prefix, self.short_name , i)
@@ -307,6 +347,11 @@ class ParameterTypeTestcase(ParameterTypeArray):
         else:
             return "<i>Insert some testcases first.</i>"
 
+    def json(self):
+        description = ParameterType.json(self)
+        description["subparameter"] = self.subparameter.json()
+        description["default_value"] = self.default_value
+        return description   
 
 class ParameterTypeCollection(ParameterType):
     """A fixed-size list of subparameters.
@@ -319,19 +364,22 @@ class ParameterTypeCollection(ParameterType):
                "{% end %}" \
                "</table>"
 
-    def __init__(self, name, shortname, description, subparameters):
-        ParameterType.__init__(self, name, shortname, description)
+    TYPE = "collection"
+
+    def __init__(self, name, short_name, description, subparameters):
+        ParameterType.__init__(self, name, short_name, description)
         self.subparameters = subparameters
 
     def parse_string(self, value):
         pass
 
-    def parse_handler(self, handler, prefix):
+    def parse_handler(self, handler, prefix, **kwargs):
         parsed_values = []
         for i in range(len(self.subparameters)):
             new_prefix = "%s%s_%d_" % (prefix, self.short_name, i)
             parsed_values.append(
-                self.subparameters[i].parse_handler(handler, new_prefix))
+                self.subparameters[i].parse_handler(handler, 
+                    new_prefix, **kwargs))
         return parsed_values
 
     def render(self, prefix, previous_value=None, **kwargs):
@@ -347,3 +395,8 @@ class ParameterTypeCollection(ParameterType):
                 "content": self.subparameters[i].render(new_prefix,
                     subparam_value)})
         return Template(self.TEMPLATE).generate(elements=elements)
+
+    def json(self):
+        description = ParameterType.json(self)
+        description["subparameters"] = [ x.json() for x in self.subparameters]
+        return description   
