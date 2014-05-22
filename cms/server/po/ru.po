@@ -352,26 +352,26 @@ msgid "token"
 msgstr "токен"
 
 msgid "tokens"
-msgstr "токены"
+msgstr "токенов"
 
 #, python-format
 msgid "You don't have %(type_pl)s available for this task."
-msgstr "You don't have %(type_pl)s available for this task."
+msgstr "У вас нет доступных %(type_pl)s по этой задаче."
 
 #, python-format
 msgid "You have infinite an infinite number of %(type_pl)s for this task."
-msgstr "You have infinite an infinite number of %(type_pl)s for this task."
+msgstr "У вас неограниченное число %(type_pl)s по этой задаче."
 
 #, python-format
 msgid "You start with no %(type_pl)s."
-msgstr "You start with no %(type_pl)s."
+msgstr "Вы начинаете без %(type_pl)s."
 
 #, python-format
 msgid "You start with one %(type_s)s."
 msgid_plural "You start with %(gen_initial)d %(type_pl)s."
-msgstr[0] "Вы начинаете с одного %(type_s)s."
-msgstr[1] "Вы начинаете с двух %(type_s)s."
-msgstr[2] "Вы начинаете с %(gen_initial)d %(type_s)s."
+msgstr[0] "Вы начинаете с одного токена."
+msgstr[1] "Вы начинаете с двух %(type_pl)s."
+msgstr[2] "Вы начинаете с %(gen_initial)d %(type_pl)s."
 
 #, python-format
 msgid "Every minute "
@@ -383,55 +383,55 @@ msgstr[2] "Каждые %(gen_interval)g минут "
 #, python-format
 msgid "you get another %(type_s)s, "
 msgid_plural "you get %(gen_number)d other %(type_pl)s, "
-msgstr[0] "вы получаете %(type_s)s,"
-msgstr[1] "вы получаете два %(type_s)s,"
-msgstr[2] "вы получаете %(gen_number)d %(type_s)s,"
+msgstr[0] "вы получаете %(type_s)s, "
+msgstr[1] "вы получаете два токена, "
+msgstr[2] "вы получаете %(gen_number)d %(type_pl)s, "
 
 #, python-format
 msgid "up to a maximum of one %(type_s)s."
 msgid_plural "up to a maximum of %(gen_max)d %(type_pl)s."
-msgstr[0] "до максимально одного %(type_s)s"
-msgstr[1] "до максимально двух %(type_s)s"
-msgstr[2] "до максимально %(gen_max)d %(type_s)s"
+msgstr[0] "в сумме не более одного токена."
+msgstr[1] "в сумме не более двух %(type_pl)s."
+msgstr[2] "в сумме не более %(gen_max)d %(type_pl)s."
 
 #, python-format
 msgid "you get another %(type_s)s."
 msgid_plural "you get %(gen_number)d other %(type_pl)s."
 msgstr[0] "вы получаете %(type_s)s."
-msgstr[1] "вы получаете 2 %(type_s)s."
-msgstr[2] "вы получаете %(gen_number)d %(type_s)s."
+msgstr[1] "вы получаете два токена."
+msgstr[2] "вы получаете %(gen_number)d %(type_pl)s."
 
 #, python-format
 msgid "You don't get other %(type_pl)s."
-msgstr "У вас нет %(type_pl)s."
+msgstr "В течение соревнования вы не получите больше %(type_pl)s."
 
 #, python-format
 msgid "You can use a %(type_s)s every second "
 msgid_plural "You can use a %(type_s)s every %(min_interval)g seconds "
-msgstr[0] "Вы можете использовать %(type_s)s каждую секунду"
-msgstr[1] "Вы можете использовать %(type_s)s каждые две секунды"
-msgstr[2] "Вы можете использовать %(type_s)s каждые %(min_interval)g секунд"
+msgstr[0] "Вы можете использовать %(type_s)s каждую секунду "
+msgstr[1] "Вы можете использовать %(type_s)s каждые две секунды "
+msgstr[2] "Вы можете использовать %(type_s)s каждые %(min_interval)g секунд "
 
 #, python-format
 msgid "and no more than one %(type_s)s in total."
 msgid_plural "and no more than %(max_number)d %(type_pl)s in total."
-msgstr[0] "и не более одного %(type_s)s"
-msgstr[1] "и не более двух %(type_s)s"
-msgstr[2] "и не более %(max_number)d %(type_s)s"
+msgstr[0] "и не более одного токена в сумме."
+msgstr[1] "и не более двух %(type_pl)s в сумме."
+msgstr[2] "и не более %(max_number)d %(type_pl)s в сумме."
 
 #, python-format
 msgid "You can use a %(type_s)s every second."
 msgid_plural "You can use a %(type_s)s every %(min_interval)g seconds."
-msgstr[0] "Вы можете использовать %(type_s)s каждую секунду"
-msgstr[1] "Вы можете использовать %(type_s)s каждые две секунды"
-msgstr[2] "Вы можете использовать %(type_s)s каждые %(min_interval)g секунд"
+msgstr[0] "Вы можете использовать %(type_s)s каждую секунду."
+msgstr[1] "Вы можете использовать %(type_s)s каждые две секунды."
+msgstr[2] "Вы можете использовать %(type_s)s каждые %(min_interval)g секунд."
 
 #, python-format
 msgid "You can use no more than one %(type_s)s in total."
 msgid_plural "You can use no more than %(max_number)d %(type_pl)s in total."
 msgstr[0] "Вы можете использовать не более одного %(type_s)s."
-msgstr[1] "Вы можете использовать не более двух %(type_s)s."
-msgstr[2] "Вы можете использовать не более %(max_number)d %(type_s)s."
+msgstr[1] "Вы можете использовать не более двух %(type_pl)s."
+msgstr[2] "Вы можете использовать не более %(max_number)d %(type_pl)s."
 
 #, fuzzy
 msgid "You have no limitations on how you use them."
@@ -746,10 +746,10 @@ msgid "Download"
 msgstr "Скачать"
 
 msgid "Played"
-msgstr "Сыграно"
+msgstr "Использован"
 
 msgid "Play!"
-msgstr "Играть!"
+msgstr "Использовать!"
 
 msgid "Wait..."
 msgstr "Подождите..."
@@ -843,11 +843,11 @@ msgstr "Сейчас у вас один токен для этой задачи.
 
 #, python-format
 msgid "Right now, you have %(tokens)s tokens available on this task."
-msgstr "Сейчас у вас %(token)s токенов для этой задачи."
+msgstr "Сейчас у вас %(tokens)s токенов для этой задачи."
 
 #, python-format
 msgid "But you have to wait until %(expiration_time)s to use them."
-msgstr "Но вы сможете использовать их только %(expiration_time)s."
+msgstr "Но вы сможете использовать их только в %(expiration_time)s."
 
 #, python-format
 msgid "You will receive a new token at %(gen_time)s."
@@ -861,7 +861,7 @@ msgstr "Сейчас у вас нет свободных токенов для �
 
 #, python-format
 msgid "But you will have to wait until %(expiration_time)s to use it."
-msgstr "Но вы сможете использовать его только %(expiration_time)s."
+msgstr "Но вы сможете использовать его только в %(expiration_time)s."
 
 msgid "Date and time"
 msgstr "Дата и время"
