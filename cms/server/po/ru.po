@@ -451,7 +451,7 @@ msgid "Failed to log in."
 msgstr "Неудачный вход."
 
 msgid "Welcome"
-msgstr "Добро пожаловать."
+msgstr "Добро пожаловать!"
 
 msgid "Please log in"
 msgstr "Пожалуйста авторизуйтесь"
@@ -914,5 +914,14 @@ msgstr "нет тестов"
 msgid "Test details"
 msgstr "Детали теста"
 
-msgid "Evaluation outcome"
-msgstr "Результат проверки"
+msgid "Registration"
+msgstr "Регистрация"
+
+msgid "First name"
+msgstr "Имя"
+
+msgid "Last name"
+msgstr "Фамилия"
+
+msgid "Register"
+msgstr "Зарегистрироваться"

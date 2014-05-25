@@ -165,7 +165,7 @@ div.login_container {
 }
 
 div.login_box {
-    max-width: 450px;
+    max-width: 600px;
     margin: 0 auto;
 }
 
@@ -213,7 +213,7 @@ div.login_box {
     div.login_box {
         /* The total height of the box is 2*60 (padding) + 60 (h2) +
            (27+9) (p) + 2*(28+18) (inputs) + 40 (buttons) = 348px; */
-        margin-top: -174px;
+        margin-top: -280px;
     }
 }
 
