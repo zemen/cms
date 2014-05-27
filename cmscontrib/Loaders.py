@@ -26,10 +26,11 @@ from __future__ import absolute_import
 from __future__ import print_function
 
 from cmscontrib.YamlLoader import YamlLoader
+from cmscontrib.SimpleLoader import SimpleLoader
 from cmscontrib.PolygonLoader import PolygonLoader
 
 LOADERS = dict((loader_class.short_name, loader_class)
-               for loader_class in [YamlLoader, PolygonLoader])
+               for loader_class in [YamlLoader, SimpleLoader, PolygonLoader])
 
 
 def choose_loader(arg, path, error_callback):

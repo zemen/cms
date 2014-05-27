@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import yaml
 import json
 import logging
 
@@ -169,10 +170,9 @@ class NamedGroup(ScoreTypeAlone):
 
         for i, parameter in enumerate(self.parameters):
             score += parameter['score']
-            if all(self.public_testcases[f]
-                   for f in parameter['files']):
+            if len(parameter['public']) != 0:
                 public_score += parameter['score']
-            headers += ["%s (%g)" % (parameter['name'], parameter['score'])]
+            headers += ["%s (%g)" % (N_("Subtask %d" % (i + 1)), parameter['score'])]
 
         return score, public_score, headers
 
@@ -195,20 +195,23 @@ class NamedGroup(ScoreTypeAlone):
         ranking_details = []
 
         for st_idx, parameter in enumerate(self.parameters):
-            st_score = self.reduce((float(evaluations[f].outcome)
-                                    for f in parameter['files']),
-                                   parameter) * parameter['score']
-            st_public = all(self.public_testcases[f]
-                            for f in parameter['files'])
+            rp = parameter["type"]
+            tests_num = len(parameter['private']) + len(parameter['public'])
+            st_score = self.reduce([float(evaluations[f].outcome)
+                                    for f in parameter['private'] + parameter['public'] + parameter['hidden']],
+                                   parameter, reduce_param = rp, tests_count = tests_num) * parameter['score']
+            st_public = self.reduce([float(evaluations[f].outcome)
+                                    for f in parameter['public']],
+                                   parameter, reduce_param = rp, tests_count = tests_num) * parameter['score']
             tc_outcomes = dict((
                 f,
                 self.get_public_outcome(
                     float(evaluations[f].outcome), parameter)
-                ) for f in parameter['files'])
+                ) for f in parameter['public'] + parameter['private'])
 
             testcases = []
             public_testcases = []
-            for f in parameter['files']:
+            for f in parameter['public']:
                 testcases.append({
                     "file": f,
                     "outcome": tc_outcomes[f],
@@ -216,18 +219,29 @@ class NamedGroup(ScoreTypeAlone):
                     "time": evaluations[f].execution_time,
                     "memory": evaluations[f].execution_memory,
                     })
-                if self.public_testcases[f]:
-                    public_testcases.append(testcases[-1])
-                else:
-                    public_testcases.append({"f": f})
+                public_testcases.append(testcases[-1])
+            for f in parameter['private']:
+                testcases.append({
+                    "file": f,
+                    "outcome": tc_outcomes[f],
+                    "text": evaluations[f].text,
+                    "time": evaluations[f].execution_time,
+                    "memory": evaluations[f].execution_memory,
+                    })
+                public_testcases.append({"f": f})
             subtasks.append({
                 "idx": st_idx + 1,
                 "score": st_score,
                 "max_score": parameter['score'],
                 "testcases": testcases,
                 })
-            if st_public:
-                public_subtasks.append(subtasks[-1])
+            if len(parameter['public']) > 0:
+                public_subtasks.append({
+                "idx": st_idx + 1,
+                "score": st_public,
+                "max_score": parameter['score'],
+                "testcases": public_testcases,
+                })
             else:
                 public_subtasks.append({
                     "idx": st_idx + 1,
@@ -261,21 +275,14 @@ class NamedGroup(ScoreTypeAlone):
 
         """
         # return "Partially correct: " + str(parameter['reduce']) + " !!"
-        if parameter['reduce'] in ['min', 'mul']:
-            if outcome <= 0.0:
-                return N_("Not correct")
-            elif outcome >= 1.0:
-                return N_("Correct")
-            else:
-                return N_("Partially correct")
-        elif parameter['reduce'] == 'threshold':
-            if 0.0 <= outcome <= parameter['threshold']:
-                return N_("Correct")
-            else:
-                return N_("Not correct")
-        return None
+        if outcome <= 0.0:
+            return N_("Not correct")
+        elif outcome >= 1.0:
+            return N_("Correct")
+        else:
+            return N_("Partially correct")
 
-    def reduce(self, outcomes, parameter):
+    def reduce(self, outcomes, parameter, reduce_param = "min", tests_count = 1.0):
         """Return the score of a subtask given the outcomes.
 
         outcomes ([float]): the outcomes of the submission in the
@@ -285,14 +292,9 @@ class NamedGroup(ScoreTypeAlone):
         return (float): the public output.
 
         """
-        if parameter['reduce'] == 'min':
+        if reduce_param == "min":
             return min(outcomes)
-        elif parameter['reduce'] == 'mul':
-            return reduce(lambda x, y: x * y, outcomes)
-        elif parameter['reduce'] == 'threshold':
-            if all(0 <= outcome <= parameter['threshold']
-                   for outcome in outcomes):
-                return 1.0
-            else:
-                return 0.0
-        return None
+        elif reduce_param == "sum":
+            return sum(outcomes) / float(tests_count)
+        else:
+            return 0.0
