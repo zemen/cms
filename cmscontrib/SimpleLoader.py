@@ -62,9 +62,9 @@ def rebuild_list(old, test_list = [], delta = 0):
     for s in old:
         s = str(s).strip()
         if s.isdigit():
-            l.append("%03d" % (int(numbers[0]) - delta))
+            l.append("%03d" % (int(s) - delta))
         else:
-            numbers = str(s).strip().split('-')
+            numbers = s.split('-')
             if len(numbers) == 2 and numbers[0].isdigit() and numbers[1].isdigit():
                 for i in xrange(int(numbers[0]) - delta, int(numbers[1]) - delta + 1):
                     l.append("%03d" % i)
