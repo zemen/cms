@@ -6,6 +6,7 @@
 # Copyright © 2010-2012 Stefano Maggiolo <s.maggiolo@gmail.com>
 # Copyright © 2010-2012 Matteo Boscariol <boscarim@hotmail.com>
 # Copyright © 2013-2014 Luca Wehrstedt <luca.wehrstedt@gmail.com>
+# Copyright © 2014 Konstantin Semenov <zemen17@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
@@ -31,6 +32,7 @@ import os
 import os.path
 import sys
 import yaml
+import re
 from datetime import timedelta
 
 from cms import LANGUAGES
@@ -51,17 +53,27 @@ def construct_yaml_str(self, node):
 yaml.Loader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
 yaml.SafeLoader.add_constructor("tag:yaml.org,2002:str", construct_yaml_str)
 
-def rebuild_list(old):
+def rebuild_list(old, test_list = [], delta = 0):
     l = []
     if old is None:
         return l
+    if not isinstance(old, list):
+        old = [old]
     for s in old:
-        numbers = str(s).strip().split('-')
-        if len(numbers) == 1:
-            l.append("%03d" % int(numbers[0]))
+        s = s.strip()
+        if s.isdigit():
+            l.append("%03d" % (int(numbers[0]) - delta))
         else:
-            for i in xrange(int(numbers[0]), int(numbers[1]) + 1):
-                l.append("%03d" % i)
+            numbers = str(s).strip().split('-')
+            if len(numbers) == 2 and numbers[0].isdigit() and numbers[1].isdigit():
+                for i in xrange(int(numbers[0]) - delta, int(numbers[1]) - delta + 1):
+                    l.append("%03d" % i)
+            else:
+                # Try matching tests with regex
+                expr = re.compile(s)
+                for t in test_list:
+                    if re.match(expr, t["input"]):
+                        l.append("%03d" % int(t["idx"]))
     return l
 
 class SimpleLoader(Loader):
@@ -175,6 +187,7 @@ class SimpleLoader(Loader):
         # be relied upon in general
         except AttributeError:
             num = 1
+        logger.info("Load task %s" % name)
 
         task_path = os.path.join(self.path, name)
         conf = {}
@@ -219,6 +232,7 @@ class SimpleLoader(Loader):
                     "Attachment %s for task %s" % (filename, name))
                 args["attachments"] += [Attachment(filename, digest)]
         
+        args.update(conf.get("task", {}))
         task = Task(**args)
 
         args = {}
@@ -243,9 +257,9 @@ class SimpleLoader(Loader):
                 args[key] = float(param)
             elif key in self.timedelta_params:
                 args[key] = timedelta(seconds=param)
-            elif key != "subtasks_parameters" and key != "subtasks":
+            elif key != "subtasks_parameters" and key != "subtasks" and key != "task":
                 args[key] = param
-
+        
         # Intelligent tests format detector
         # Load all tests recursively
         def load_tests(tests_path, name):
@@ -263,7 +277,7 @@ class SimpleLoader(Loader):
                     for test in full_names)
         tests = []
         detected = False
-        tests_format = 0
+
         if not detected:
             # * / *.a format
             detected = True
@@ -284,7 +298,7 @@ class SimpleLoader(Loader):
                                       "output": tests_dict[short_name + ".a"],
                                       "public": False })
                         idx += 1
-            tests_format = 1
+
         if not detected:
             # *.in* / *.out* format
             detected = True
@@ -292,7 +306,7 @@ class SimpleLoader(Loader):
                 if test.find(".in") != -1:
                     if test.replace(".in", ".out") not in tests_dict.keys():
                         detected = False
-                elif test.find(".out"):
+                elif test.find(".out") != -1:
                     if test.replace(".out", ".in") not in tests_dict.keys():
                         detected = False
                 else:
@@ -307,7 +321,76 @@ class SimpleLoader(Loader):
                                       "output": tests_dict[short_name.replace(".in", ".out")],
                                       "public": False })
                         idx += 1
-            tests_format = 2
+
+        if not detected:
+            # *.in* / *.sol* format
+            detected = True
+            for test in tests_dict.keys():
+                if test.find(".in") != -1:
+                    if test.replace(".in", ".sol") not in tests_dict.keys():
+                        detected = False
+                elif test.find(".sol") != -1:
+                    if test.replace(".sol", ".in") not in tests_dict.keys():
+                        detected = False
+                else:
+                    detected = False
+            if detected:
+                logger.info("Tests format *.in* / *.sol* detected")
+                idx = 0
+                for (short_name, test) in sorted(tests_dict.items()):
+                    if short_name.find(".in") != -1:
+                        tests.append({"idx": idx,
+                                      "input": test,
+                                      "output": tests_dict[short_name.replace(".in", ".sol")],
+                                      "public": False })
+                        idx += 1
+
+        if not detected:
+            # *.in* / *.res* format
+            detected = True
+            for test in tests_dict.keys():
+                if test.find(".in") != -1:
+                    if test.replace(".in", ".res") not in tests_dict.keys():
+                        detected = False
+                elif test.find(".res") != -1:
+                    if test.replace(".res", ".in") not in tests_dict.keys():
+                        detected = False
+                else:
+                    detected = False
+            if detected:
+                logger.info("Tests format *.in* / *.res* detected")
+                idx = 0
+                for (short_name, test) in sorted(tests_dict.items()):
+                    if short_name.find(".in") != -1:
+                        tests.append({"idx": idx,
+                                      "input": test,
+                                      "output": tests_dict[short_name.replace(".in", ".res")],
+                                      "public": False })
+                        idx += 1
+
+        if not detected:
+            # *.in* / *.ans* format
+            detected = True
+            for test in tests_dict.keys():
+                if test.find(".in") != -1:
+                    if test.replace(".in", ".ans") not in tests_dict.keys():
+                        detected = False
+                elif test.find(".ans") != -1:
+                    if test.replace(".ans", ".in") not in tests_dict.keys():
+                        detected = False
+                else:
+                    detected = False
+            if detected:
+                logger.info("Tests format *.in* / *.ans* detected")
+                idx = 0
+                for (short_name, test) in sorted(tests_dict.items()):
+                    if short_name.find(".in") != -1:
+                        tests.append({"idx": idx,
+                                      "input": test,
+                                      "output": tests_dict[short_name.replace(".in", ".ans")],
+                                      "public": False })
+                        idx += 1
+
         if not detected:
             # *input* / *output* format
             detected = True
@@ -315,7 +398,7 @@ class SimpleLoader(Loader):
                 if test.find("input") != -1:
                     if test.replace("input", "output") not in tests_dict.keys():
                         detected = False
-                elif test.find("output"):
+                elif test.find("output") != -1:
                     if test.replace("output", "input") not in tests_dict.keys():
                         detected = False
                 else:
@@ -330,7 +413,30 @@ class SimpleLoader(Loader):
                                       "output": tests_dict[short_name.replace("input", "output")],
                                       "public": False })
                         idx += 1
-            tests_format = 3
+
+        if not detected:
+            # in* out* format using full paths
+            detected = True
+            for test in full_names:
+                if test.startswith("in"):
+                    if "out" + test[2:] not in full_names:
+                        detected = False
+                elif test.startswith("out"):
+                    if "in" + test[3:] not in full_names:
+                        detected = False
+                else:
+                    detected = False
+            if detected:
+                logger.info("Tests format in* / out* with full paths detected")
+                idx = 0
+                for test in sorted(full_names):
+                    if test.startswith("in"):
+                        tests.append({"idx": idx,
+                                      "input": test,
+                                      "output": "out" + test[2:],
+                                      "public": False })
+                        idx += 1
+
         if not detected:
             # Need more intelligence
             logger.critical("Sorry, I can't recognize tests format")
@@ -341,7 +447,7 @@ class SimpleLoader(Loader):
             logger.info("Detected simple subtask description")
             args["score_type"] = "NamedGroup"
             subtasks = conf["subtasks_parameters"]
-            total_value = float(subtasks.get("total_value", "100.0"))
+            total_value = float(subtasks.get("total_value", 100))
             is_public = subtasks.get("public_tests", False)
             if is_public:
                 for test in tests:
@@ -371,29 +477,63 @@ class SimpleLoader(Loader):
                         tests_group["private"].append(i)
             tests_group["public"] = rebuild_list(tests_group["public"])
             tests_group["private"] = rebuild_list(tests_group["private"])
-            args["score_type_parameters"] = json.dumps([samples_group, tests_group])
+            if len(samples) == 0:
+                args["score_type_parameters"] = json.dumps([tests_group])
+            else:
+                args["score_type_parameters"] = json.dumps([samples_group, tests_group])
         elif "subtasks" in conf:
+
             logger.info("Detected full subtask description")
             args["score_type"] = "NamedGroup"
             subtasks = conf.get("subtasks")
             for subtask in subtasks:
-                if subtask["score"] is None:
-                    subtask["score"] = 0.0
-                if subtask["type"] is None:
+                if not "score" in subtask:
+                    subtask["score"] = 0
+                if not "type" in subtask:
                     subtask["type"] = "sum"
-                subtask["public"] = rebuild_list(subtask["public"])
-                subtask["private"] = rebuild_list(subtask["private"])
-                subtask["hidden"] = rebuild_list(subtask["hidden"])
+                if subtask["type"] != "sum" and subtask["type"] != "min":
+                    # Custom evaluator parameter
+                    with open(os.path.join(task_path, subtask["type"]), "r") as prog_file:
+                        prog = prog_file.read()
+                    subtask["type"] = prog
+                subtask["public"] = rebuild_list(subtask.get("public", []), test_list = tests, delta = 1)
+                subtask["private"] = rebuild_list(subtask.get("private", []), test_list = tests, delta = 1)
+                subtask["hidden"] = rebuild_list(subtask.get("hidden", []), test_list = tests, delta = 1)
                 for i in subtask["public"]:
                     tests[int(i)]["public"] = True
             args["score_type_parameters"] = json.dumps(conf.get("subtasks"))
         else:
-            args["score_type"] = "Sum"
-            total_value = 100.0
-            input_value = 0.0
-            if len(tests) != 0:
-                input_value = total_value / len(tests)
-            args["score_type_parameters"] = str(input_value)
+
+            logger.info("Subtask description was not detected")
+            args["score_type"] = "NamedGroup"
+            # Autodetect samples
+            samples = []
+            for test in tests:
+                if test["input"].find("dummy") != -1 or test["input"].find("sample") != -1:
+                    samples.append(test["idx"])
+            for i in samples:
+                tests[i]["public"] = True
+            samples_group = {
+                "score": 0,
+                "type": "sum",
+                "public": rebuild_list(samples),
+                "private": [],
+                "hidden": [] }
+            tests_group = {
+                "score": 100,
+                "type": "sum",
+                "public": [],
+                "private": [],
+                "hidden": [] }
+            for i in xrange(len(tests)):
+                if not i in samples:
+                    tests_group["private"].append(i)
+            tests_group["public"] = rebuild_list(tests_group["public"])
+            tests_group["private"] = rebuild_list(tests_group["private"])
+            if len(samples) == 0:
+                args["score_type_parameters"] = json.dumps([tests_group])
+            else:
+                args["score_type_parameters"] = json.dumps([samples_group, tests_group])
 
         # Load testcases
         args["testcases"] = []
@@ -453,7 +593,7 @@ class SimpleLoader(Loader):
             args["memory_limit"] = None
             args["task_type_parameters"] = '["%s"]' % evaluation_param
             task.submission_format = [
-                SubmissionFormatElement("%03d.out" % i)
+                SubmissionFormatElement("%03d.out" % (i + 1))
                 for i in xrange(len(tests))]
         elif args["task_type"] == "Batch":
             args["task_type_parameters"] = \

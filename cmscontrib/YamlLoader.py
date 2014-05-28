@@ -128,7 +128,7 @@ class YamlLoader(Loader):
 
         """
         # TODO - Not really refined...
-        return os.path.exists(os.path.join(path, "contest.yaml"))
+        return os.path.exists(os.path.join(path, "italy_contest.yaml"))
 
     def get_contest(self):
         """See docstring in class Loader.

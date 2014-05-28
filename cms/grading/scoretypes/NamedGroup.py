@@ -172,7 +172,7 @@ class NamedGroup(ScoreTypeAlone):
             score += parameter['score']
             if len(parameter['public']) != 0:
                 public_score += parameter['score']
-            headers += ["%s (%g)" % (N_("Subtask %d" % (i + 1)), parameter['score'])]
+            headers += ["%s (%g)" % (N_("Subtask %d" % i), parameter['score'])]
 
         return score, public_score, headers
 
@@ -230,21 +230,21 @@ class NamedGroup(ScoreTypeAlone):
                     })
                 public_testcases.append({"f": f})
             subtasks.append({
-                "idx": st_idx + 1,
+                "idx": st_idx,
                 "score": st_score,
                 "max_score": parameter['score'],
                 "testcases": testcases,
                 })
             if len(parameter['public']) > 0:
                 public_subtasks.append({
-                "idx": st_idx + 1,
+                "idx": st_idx,
                 "score": st_public,
                 "max_score": parameter['score'],
                 "testcases": public_testcases,
                 })
             else:
                 public_subtasks.append({
-                    "idx": st_idx + 1,
+                    "idx": st_idx,
                     "testcases": public_testcases,
                     })
 
@@ -292,9 +292,13 @@ class NamedGroup(ScoreTypeAlone):
         return (float): the public output.
 
         """
+        if len(outcomes) == 0:
+            return 0.0
         if reduce_param == "min":
             return min(outcomes)
         elif reduce_param == "sum":
             return sum(outcomes) / float(tests_count)
         else:
-            return 0.0
+            # Load reduce_param as python program to calculate score
+            exec reduce_param
+            return calc_score(outcomes)

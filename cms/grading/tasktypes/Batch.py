@@ -170,12 +170,17 @@ class Batch(TaskType):
             files_to_get["grader%s" % source_ext] = \
                 job.managers["grader%s" % source_ext].digest
 
-        # Also copy all *.h and *lib.pas graders
+        # Also copy all *.h *lib.pas lib*.a graders
+        libraries = []
         for filename in job.managers.iterkeys():
             if filename.endswith('.h') or \
                     filename.endswith('lib.pas'):
                 files_to_get[filename] = \
                     job.managers[filename].digest
+            if filename.startswith('lib') and filename.endswith('.a'):
+                files_to_get[filename] = \
+                    job.managers[filename].digest
+                libraries.append(filename[3:-2])
 
         for filename, digest in files_to_get.iteritems():
             sandbox.create_file_from_storage(filename, digest)
@@ -184,7 +189,7 @@ class Batch(TaskType):
         executable_filename = format_filename.replace(".%l", "")
         commands = get_compilation_commands(language,
                                             source_filenames,
-                                            executable_filename)
+                                            executable_filename, libraries)
 
         # Run the compilation
         operation_success, compilation_success, text, plus = \

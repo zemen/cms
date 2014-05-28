@@ -69,7 +69,7 @@ class JobException(Exception):
 
 
 def get_compilation_commands(language, source_filenames, executable_filename,
-                             for_evaluation=True):
+                             libraries = [], for_evaluation=True):
     """Return the compilation commands.
 
     The compilation commands are for the specified language, source
@@ -99,6 +99,10 @@ def get_compilation_commands(language, source_filenames, executable_filename,
         command += ["-static", "-O2", "-o", executable_filename]
         command += source_filenames
         command += ["-lm"]
+        if len(libraries) > 0:
+            command += ["-L."]
+        for lib in libraries:
+            command += ["-l%s" % lib]
         commands.append(command)
     elif language == LANG_CPP:
         command = ["/usr/bin/g++"]
@@ -106,6 +110,10 @@ def get_compilation_commands(language, source_filenames, executable_filename,
             command += ["-DEVAL"]
         command += ["-static", "-O2", "-o", executable_filename]
         command += source_filenames
+        if len(libraries) > 0:
+            command += ["-L."]
+        for lib in libraries:
+            command += ["-l%s" % lib]
         commands.append(command)
     elif language == LANG_PASCAL:
         command = ["/usr/bin/fpc"]
