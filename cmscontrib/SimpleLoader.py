@@ -60,7 +60,7 @@ def rebuild_list(old, test_list = [], delta = 0):
     if not isinstance(old, list):
         old = [old]
     for s in old:
-        s = s.strip()
+        s = str(s).strip()
         if s.isdigit():
             l.append("%03d" % (int(numbers[0]) - delta))
         else:
